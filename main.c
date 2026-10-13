@@ -1,4 +1,4 @@
-
+/*
 #include <stdio.h>
 #include "listas.h"
 #include "archivos.h"
@@ -38,3 +38,64 @@ int main(void) {
 
     return resultado ? 0 : 1;
 }
+*/
+
+
+#include <stdio.h>
+#include "sociedad.h"
+
+// cuenta los nombres de una lista simple
+int contar_nombres(struct NodoNombre *lista) {
+    int cantidad = 0;
+
+    while (lista != NULL) {
+        cantidad++;
+        lista = lista->siguiente;
+    }
+
+    return cantidad;
+}
+
+// cuenta los nombres de una lista doble
+int contar_bienes(struct NodoNombreDoble *lista) {
+    int cantidad = 0;
+
+    while (lista != NULL) {
+        cantidad++;
+        lista = lista->siguiente;
+    }
+
+    return cantidad;
+}
+
+// carga los datos y muestra la informacion de la sociedad
+int main(void) {
+    struct Sociedad sociedad;
+
+    int resultado = inicializar_sociedad(
+        &sociedad,
+        "Datos/personas",
+        "Datos/comunas",
+        "Datos/bienes",
+        "Datos/servicios"
+    );
+
+    if (!resultado) {
+        printf("Error al cargar los datos\n");
+        return 1;
+    }
+
+    printf("Personas: %d\n", sociedad.poblacionTotal);
+    printf("Comunas: %d\n", sociedad.cantidadComunas);
+
+    printf("Bienes: %d\n",
+           contar_bienes(sociedad.catalogoBienes));
+
+    printf("Servicios: %d\n",
+           contar_nombres(sociedad.catalogoServicios));
+
+    liberar_sociedad(&sociedad);
+
+    return 0;
+}
+
