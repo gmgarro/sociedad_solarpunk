@@ -4,6 +4,7 @@
 #include <time.h>
 #include "sociedad.h"
 #include "consumo.h"
+#include "economia.h"
 
 // muestra las existencias de todas las comunas
 void mostrar_comunas(struct Sociedad *sociedad) {
@@ -65,6 +66,18 @@ int main(void) {
 
     printf("\n===== estado inicial =====\n");
     mostrar_comunas(&sociedad);
+    // Prueba un trueque entre las dos primeras comunas
+    if (sociedad.comunas != NULL &&
+    sociedad.comunas->siguiente != NULL) {
+
+    realizar_trueque(sociedad.comunas,
+                     sociedad.comunas->siguiente,
+                     "Computadora portátil",
+                     "Teléfono celular",
+                     10);
+
+    mostrar_comunas(&sociedad);
+}
 
     // ejecuta la simulacion durante diez dias
     for (dia = 1; dia <= 10; dia++) {
