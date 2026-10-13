@@ -52,4 +52,12 @@ struct Sociedad {
     struct Comuna *comunas;
 };
 
+int inicializar_sociedad(struct Sociedad *sociedad,
+                         const char *archivoPersonas,
+                         const char *archivoComunas,
+                         const char *archivoBienes,
+                         const char *archivoServicios);
+
+void liberar_sociedad(struct Sociedad *sociedad);
+
 #endif
