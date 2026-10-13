@@ -263,8 +263,11 @@ void calcular_indices_comuna(struct Comuna *comuna) {
     int maximoTotal = 0;
     int cantidadTotal = 0;
 
-    actual = comuna->bienes;
+    if (comuna == NULL) {
+        return;
+    }
 
+    actual = comuna->bienes;
     while (actual != NULL) {
         maximoTotal += actual->maximo;
         cantidadTotal += actual->cantidad;
@@ -272,7 +275,6 @@ void calcular_indices_comuna(struct Comuna *comuna) {
     }
 
     actual = comuna->servicios;
-
     while (actual != NULL) {
         maximoTotal += actual->maximo;
         cantidadTotal += actual->cantidad;
@@ -283,6 +285,10 @@ void calcular_indices_comuna(struct Comuna *comuna) {
         comuna->necesidad =
             100.0f * (maximoTotal - cantidadTotal) / maximoTotal;
     } else {
+        comuna->necesidad = 0;
+    }
+
+    if (comuna->necesidad < 0) {
         comuna->necesidad = 0;
     }
 
