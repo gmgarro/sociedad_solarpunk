@@ -46,6 +46,91 @@ void mostrar_comunas(struct Sociedad *sociedad) {
     printf("\n----------------------------------\n");
 }
 
+void menu_trueque(struct Sociedad *sociedad) {
+    struct Comuna *origen;
+    struct Comuna *destino;
+    int tipo;
+    int numero;
+    int i;
+    int cantidad;
+    char nombreOrigen[100];
+    char nombreDestino[100];
+
+    printf("\n¿Desea realizar un trueque?\n");
+    printf("1. Bienes\n2. Servicios\n0. Omitir\nOpcion: ");
+
+    if (scanf("%d", &tipo) != 1 || tipo < 0 || tipo > 2) {
+        printf("Opcion no valida.\n");
+        return;
+    }
+
+    if (tipo == 0) {
+        return;
+    }
+
+    printf("\nComunas disponibles:\n");
+    origen = sociedad->comunas;
+    i = 1;
+
+    while (origen != NULL) {
+        printf("%d. %s\n", i++, origen->nombre);
+        origen = origen->siguiente;
+    }
+
+    printf("Numero de la comuna que entrega: ");
+    if (scanf("%d", &numero) != 1 || numero < 1) {
+        printf("Comuna no valida.\n");
+        return;
+    }
+
+    origen = sociedad->comunas;
+    for (i = 1; origen != NULL && i < numero; i++) {
+        origen = origen->siguiente;
+    }
+
+    if (origen == NULL) {
+        printf("Comuna no valida.\n");
+        return;
+    }
+
+    printf("Numero de la comuna que recibe: ");
+    if (scanf("%d", &numero) != 1 || numero < 1) {
+        printf("Comuna no valida.\n");
+        return;
+    }
+
+    destino = sociedad->comunas;
+    for (i = 1; destino != NULL && i < numero; i++) {
+        destino = destino->siguiente;
+    }
+
+    if (destino == NULL || destino == origen) {
+        printf("Comuna no valida.\n");
+        return;
+    }
+
+    printf("Nombre del elemento que entrega: ");
+    scanf(" %99[^\n]", nombreOrigen);
+
+    printf("Nombre del elemento que recibe: ");
+    scanf(" %99[^\n]", nombreDestino);
+
+    printf("Cantidad a intercambiar: ");
+    if (scanf("%d", &cantidad) != 1 || cantidad <= 0) {
+        printf("Cantidad no valida.\n");
+        return;
+    }
+
+    if (tipo == 1) {
+        realizar_trueque(origen, destino,
+                         nombreOrigen, nombreDestino, cantidad);
+    } else {
+        realizar_trueque_servicios(origen, destino,
+                                   nombreOrigen, nombreDestino,
+                                   cantidad);
+    }
+}
+
 // inicia la sociedad y ejecuta la simulacion
 int main(void) {
     struct Sociedad sociedad;
@@ -66,18 +151,8 @@ int main(void) {
 
     printf("\n===== estado inicial =====\n");
     mostrar_comunas(&sociedad);
-    // Prueba un trueque entre las dos primeras comunas
-    if (sociedad.comunas != NULL &&
-    sociedad.comunas->siguiente != NULL) {
-
-    realizar_trueque(sociedad.comunas,
-                     sociedad.comunas->siguiente,
-                     "Computadora portátil",
-                     "Teléfono celular",
-                     10);
-
+    menu_trueque(&sociedad);
     mostrar_comunas(&sociedad);
-}
 
     // ejecuta la simulacion durante diez dias
     for (dia = 1; dia <= 10; dia++) {

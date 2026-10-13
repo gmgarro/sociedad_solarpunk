@@ -82,3 +82,71 @@ int realizar_trueque(struct Comuna *origen,
 
     return 1;
 }
+
+// Realiza un intercambio de servicios entre dos comunas
+int realizar_trueque_servicios(struct Comuna *origen,
+                               struct Comuna *destino,
+                               const char *servicioOrigen,
+                               const char *servicioDestino,
+                               int cantidad) {
+    struct Existencia *entregaOrigen;
+    struct Existencia *entregaDestino;
+    struct Existencia *recibeOrigen;
+    struct Existencia *recibeDestino;
+
+    if (origen == NULL || destino == NULL ||
+        servicioOrigen == NULL || servicioDestino == NULL ||
+        origen == destino || cantidad <= 0 ||
+        strcmp(servicioOrigen, servicioDestino) == 0) {
+        printf("Datos del trueque no validos.\n");
+        return 0;
+    }
+
+    entregaOrigen = buscar_bien(origen->servicios, servicioOrigen);
+    entregaDestino = buscar_bien(destino->servicios, servicioDestino);
+    recibeOrigen = buscar_bien(origen->servicios, servicioDestino);
+    recibeDestino = buscar_bien(destino->servicios, servicioOrigen);
+
+    if (entregaOrigen == NULL || entregaDestino == NULL ||
+    recibeOrigen == NULL || recibeDestino == NULL) {
+    printf("Error buscando servicios para el trueque:\n");
+    printf("Servicio de origen '%s': %s\n",
+           servicioOrigen,
+           entregaOrigen ? "encontrado" : "NO encontrado");
+    printf("Servicio de destino '%s': %s\n",
+           servicioDestino,
+           entregaDestino ? "encontrado" : "NO encontrado");
+    printf("Servicio recibido por origen '%s': %s\n",
+           servicioDestino,
+           recibeOrigen ? "encontrado" : "NO encontrado");
+    printf("Servicio recibido por destino '%s': %s\n",
+           servicioOrigen,
+           recibeDestino ? "encontrado" : "NO encontrado");
+    return 0;
+}
+
+    if (entregaOrigen->cantidad < cantidad ||
+        entregaDestino->cantidad < cantidad) {
+        printf("No hay suficientes servicios disponibles.\n");
+        return 0;
+    }
+
+    if (recibeOrigen->cantidad + cantidad > recibeOrigen->maximo ||
+        recibeDestino->cantidad + cantidad > recibeDestino->maximo) {
+        printf("El trueque supera la capacidad maxima.\n");
+        return 0;
+    }
+
+    entregaOrigen->cantidad -= cantidad;
+    recibeOrigen->cantidad += cantidad;
+    entregaDestino->cantidad -= cantidad;
+    recibeDestino->cantidad += cantidad;
+
+    calcular_indices_comuna(origen);
+    calcular_indices_comuna(destino);
+
+    printf("Trueque de servicios realizado entre %s y %s.\n",
+           origen->nombre, destino->nombre);
+
+    return 1;
+}
