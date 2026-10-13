@@ -156,16 +156,9 @@ int main(void) {
 
     // ejecuta la simulacion durante diez dias
     for (dia = 1; dia <= 10; dia++) {
-        printf("\n\n========== dia %d ==========\n", dia);
+    printf("\n\n========== dia %d ==========\n", dia);
 
-        aplicar_consumo_diario(&sociedad);
-
-        // muestra el estado de todas las comunas
-        mostrar_comunas(&sociedad);
-    }
-
-    // libera la memoria utilizada
-    liberar_sociedad(&sociedad);
-
-    return 0;
-}
+    menu_trueque(&sociedad);
+    aplicar_consumo_diario(&sociedad);
+    mostrar_comunas(&sociedad);
+}}
