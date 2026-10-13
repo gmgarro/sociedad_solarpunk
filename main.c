@@ -3,50 +3,44 @@
 #include <stdlib.h>
 #include <time.h>
 #include "sociedad.h"
-#include "simulacion.h"
+#include "consumo.h"
 
-// muestra los bienes y servicios de una comuna
+// muestra las existencias de una comuna
 void mostrar_existencias(struct Comuna *comuna) {
     struct Existencia *actual;
 
-    printf("\ncomuna: %s\n", comuna->nombre);
-    printf("poblacion: %d\n", comuna->poblacion);
+    if (comuna == NULL) {
+        return;
+    }
 
-    // muestra los bienes disponibles
-    printf("\nbienes:\n");
+    printf("\ncomuna: %s\n", comuna->nombre);
+
+    printf("bienes:\n");
     actual = comuna->bienes;
 
     while (actual != NULL) {
-        printf("%s: %d/%d\n",
-               actual->nombre,
-               actual->cantidad,
-               actual->maximo);
-
+        printf("- %s: %d\n", actual->nombre, actual->cantidad);
         actual = actual->siguiente;
     }
 
-    // muestra los servicios disponibles
-    printf("\nservicios:\n");
+    printf("servicios:\n");
     actual = comuna->servicios;
 
     while (actual != NULL) {
-        printf("%s: %d/%d\n",
-               actual->nombre,
-               actual->cantidad,
-               actual->maximo);
-
+        printf("- %s: %d\n", actual->nombre, actual->cantidad);
         actual = actual->siguiente;
     }
 
-    printf("\nnecesidad: %.2f%%\n", comuna->necesidad);
-    printf("satisfaccion: %.2f%%\n", comuna->satisfaccion);
+    printf("necesidad: %.2f\n", comuna->necesidad);
+    printf("satisfaccion: %.2f\n", comuna->satisfaccion);
 }
 
-// ejecuta la prueba del consumo diario
+// inicia la sociedad y ejecuta la simulacion
 int main(void) {
     struct Sociedad sociedad;
+    int dia;
 
-    // prepara los numeros aleatorios
+    // inicia los numeros aleatorios
     srand(time(NULL));
 
     // carga los datos de los archivos
@@ -55,38 +49,24 @@ int main(void) {
                               "Datos/comunas",
                               "Datos/bienes",
                               "Datos/servicios")) {
-        printf("\nno se pudo inicializar la sociedad\n");
+        printf("no se pudo inicializar la sociedad\n");
         return 1;
     }
 
-    // muestra los datos generales
-    printf("\n--- sociedad inicializada ---\n");
-    printf("poblacion total: %d\n", sociedad.poblacionTotal);
+    printf("sociedad inicializada correctamente\n");
     printf("cantidad de comunas: %d\n", sociedad.cantidadComunas);
-    printf("bienes activos: %d\n", sociedad.cantidadBienesActivos);
-    printf("servicios activos: %d\n", sociedad.cantidadServiciosActivos);
-    printf("dia actual: %d\n", sociedad.dia);
 
-    // muestra las existencias iniciales de la primera comuna
-    if (sociedad.comunas != NULL) {
-        printf("\n--- antes del consumo ---\n");
+    // ejecuta la simulacion durante diez dias
+    for (dia = 0; dia < 10; dia++) {
+        printf("\n========== dia %d ==========\n", dia + 1);
+
+        aplicar_consumo_diario(&sociedad);
+
+        // muestra los cambios en la primera comuna
         mostrar_existencias(sociedad.comunas);
-
-        // aplica el consumo de 5 dias
-        for (int i = 0; i < 5; i++) {
-            aplicar_consumo_diario(&sociedad);
-        }
-
-        // muestra las existencias despues del consumo
-        printf("\n--- despues del consumo ---\n");
-        mostrar_existencias(sociedad.comunas);
-
-        printf("\ndia actual: %d\n", sociedad.dia);
-    } else {
-        printf("\nno hay comunas para probar el consumo\n");
     }
 
-    // libera la memoria utilizada por la sociedad
+    // libera la memoria utilizada
     liberar_sociedad(&sociedad);
 
     return 0;
