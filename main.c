@@ -1,74 +1,36 @@
-/*
-#include <stdio.h>
-#include "listas.h"
-#include "archivos.h"
-
-// carga los archivos y muestra los datos guardados
-int main(void) {
-    Lista personas;
-    Lista servicios;
-    Lista bienes;
-    Lista comunas;
-
-    // inicializa las listas
-    inicializar_lista(&personas);
-    inicializar_lista(&servicios);
-    inicializar_lista(&bienes);
-    inicializar_lista(&comunas);
-
-    // carga los datos de cada archivo
-    int resultado = cargar_archivo("Datos/personas", &personas);
-    resultado = cargar_archivo("Datos/servicios", &servicios) && resultado;
-    resultado = cargar_archivo("Datos/bienes", &bienes) && resultado;
-    resultado = cargar_archivo("Datos/comunas", &comunas) && resultado;
-
-    // muestra los datos si todos los archivos se cargaron bien
-    if (resultado) {
-        printf("personas: %d\n", personas.cantidad);
-        printf("servicios: %d\n", servicios.cantidad);
-        printf("bienes: %d\n", bienes.cantidad);
-        printf("comunas: %d\n", comunas.cantidad);
-    }
-
-    // libera la memoria de las listas
-    liberar_lista(&personas);
-    liberar_lista(&servicios);
-    liberar_lista(&bienes);
-    liberar_lista(&comunas);
-
-    return resultado ? 0 : 1;
-}
-*/
-
-
 #include <stdio.h>
 #include "sociedad.h"
 
-// cuenta los nombres de una lista simple
-int contar_nombres(struct NodoNombre *lista) {
-    int cantidad = 0;
+// Muestra los bienes y servicios de una comuna
+void mostrar_existencias(char *titulo, struct Existencia *lista) {
+    printf("%s:\n", titulo);
 
     while (lista != NULL) {
-        cantidad++;
+        printf("  %s: %d / %d\n",
+               lista->nombre, lista->cantidad, lista->maximo);
+
         lista = lista->siguiente;
     }
-
-    return cantidad;
 }
 
-// cuenta los nombres de una lista doble
-int contar_bienes(struct NodoNombreDoble *lista) {
-    int cantidad = 0;
+// Muestra los datos de cada comuna
+void mostrar_comunas(struct Comuna *comuna) {
+    while (comuna != NULL) {
+        printf("\n-----------------------------\n");
+        printf("Comuna: %s\n", comuna->nombre);
+        printf("Poblacion: %d\n", comuna->poblacion);
 
-    while (lista != NULL) {
-        cantidad++;
-        lista = lista->siguiente;
+        mostrar_existencias("Bienes", comuna->bienes);
+        mostrar_existencias("Servicios", comuna->servicios);
+
+        printf("Necesidad: %.2f%%\n", comuna->necesidad);
+        printf("Satisfaccion: %.2f%%\n", comuna->satisfaccion);
+
+        comuna = comuna->siguiente;
     }
-
-    return cantidad;
 }
 
-// carga los datos y muestra la informacion de la sociedad
+// Carga los datos y muestra la informacion de la sociedad
 int main(void) {
     struct Sociedad sociedad;
 
@@ -85,17 +47,17 @@ int main(void) {
         return 1;
     }
 
+    printf("\n===== SOCIEDAD SOLARPUNK =====\n");
     printf("Personas: %d\n", sociedad.poblacionTotal);
-    printf("Comunas: %d\n", sociedad.cantidadComunas);
+    printf("Comunas activas: %d\n", sociedad.cantidadComunas);
+    printf("Bienes activos: %d\n", sociedad.cantidadBienesActivos);
+    printf("Servicios activos: %d\n", sociedad.cantidadServiciosActivos);
 
-    printf("Bienes: %d\n",
-           contar_bienes(sociedad.catalogoBienes));
-
-    printf("Servicios: %d\n",
-           contar_nombres(sociedad.catalogoServicios));
+    mostrar_comunas(sociedad.comunas);
 
     liberar_sociedad(&sociedad);
 
     return 0;
 }
+
 

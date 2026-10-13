@@ -185,6 +185,114 @@ int agregar_comuna(struct Sociedad *sociedad, const char *nombre) {
     return 1;
 }
 
+
+/* Agrega un bien o servicio a las existencias de una comuna */
+int agregar_existencia(struct Existencia **lista, const char *nombre,
+                       int maximo) {
+    struct Existencia *nuevo = malloc(sizeof(struct Existencia));
+
+    if (nuevo == NULL) {
+        return 0;
+    }
+
+    nuevo->nombre = copiar_texto(nombre);
+
+    if (nuevo->nombre == NULL) {
+        free(nuevo);
+        return 0;
+    }
+
+    nuevo->maximo = maximo;
+    nuevo->cantidad = maximo * 4 / 5;
+    nuevo->siguiente = NULL;
+
+    if (*lista == NULL) {
+        *lista = nuevo;
+    } else {
+        struct Existencia *actual = *lista;
+
+        while (actual->siguiente != NULL) {
+            actual = actual->siguiente;
+        }
+
+        actual->siguiente = nuevo;
+    }
+
+    return 1;
+}
+
+/* Crea las existencias de una comuna */
+int crear_existencias_comuna(struct Sociedad *sociedad,
+                             struct Comuna *comuna) {
+    struct NodoNombreDoble *bien = sociedad->catalogoBienes;
+    struct NodoNombre *servicio = sociedad->catalogoServicios;
+    int i;
+
+    for (i = 0; i < sociedad->cantidadBienesActivos; i++) {
+        if (bien == NULL) {
+            return 0;
+        }
+
+        if (!agregar_existencia(&comuna->bienes, bien->nombre,
+                                comuna->poblacion * 5)) {
+            return 0;
+        }
+
+        bien = bien->siguiente;
+    }
+
+    for (i = 0; i < sociedad->cantidadServiciosActivos; i++) {
+        if (servicio == NULL) {
+            return 0;
+        }
+
+        if (!agregar_existencia(&comuna->servicios, servicio->nombre,
+                                comuna->poblacion * 2)) {
+            return 0;
+        }
+
+        servicio = servicio->siguiente;
+    }
+
+    return 1;
+}
+
+/* Calcula la necesidad y satisfaccion inicial */
+void calcular_indices_comuna(struct Comuna *comuna) {
+    struct Existencia *actual;
+    int maximoTotal = 0;
+    int cantidadTotal = 0;
+
+    actual = comuna->bienes;
+
+    while (actual != NULL) {
+        maximoTotal += actual->maximo;
+        cantidadTotal += actual->cantidad;
+        actual = actual->siguiente;
+    }
+
+    actual = comuna->servicios;
+
+    while (actual != NULL) {
+        maximoTotal += actual->maximo;
+        cantidadTotal += actual->cantidad;
+        actual = actual->siguiente;
+    }
+
+    if (maximoTotal > 0) {
+        comuna->necesidad =
+            100.0f * (maximoTotal - cantidadTotal) / maximoTotal;
+    } else {
+        comuna->necesidad = 0;
+    }
+
+    if (comuna->necesidad >= 100) {
+        comuna->necesidad = 99.9f;
+    }
+
+    comuna->satisfaccion = 100.0f - comuna->necesidad;
+}
+
 // Carga los datos iniciales de la sociedad
 int inicializar_sociedad(struct Sociedad *sociedad,
                          const char *archivoPersonas,
@@ -247,23 +355,57 @@ int inicializar_sociedad(struct Sociedad *sociedad,
     }
 
     // Crea las comunas
-    actual = comunas.inicio;
+    
+    int comunasActivas;
+    int bienesActivos;
+    int serviciosActivos;
 
-    while (actual != NULL) {
-        if (!agregar_comuna(sociedad, actual->nombre)) {
-            liberar_lista(&personas);
-            liberar_lista(&comunas);
-            liberar_lista(&bienes);
-            liberar_lista(&servicios);
-            liberar_sociedad(sociedad);
-            return 0;
-        }
+    printf("Cantidad de comunas activas (1-%d): ",
+           comunas.cantidad);
 
-        sociedad->cantidadComunas++;
-        actual = actual->siguiente;
+    if (scanf("%d", &comunasActivas) != 1 ||
+        comunasActivas < 1 ||
+        comunasActivas > comunas.cantidad) {
+        printf("Cantidad de comunas no valida\n");
+        liberar_lista(&personas);
+        liberar_lista(&comunas);
+        liberar_lista(&bienes);
+        liberar_lista(&servicios);
+        return 0;
     }
 
-    // Copia los bienes disponibles en el catalogo
+    printf("Cantidad de bienes activos (1-%d): ",
+           bienes.cantidad);
+
+    if (scanf("%d", &bienesActivos) != 1 ||
+        bienesActivos < 1 ||
+        bienesActivos > bienes.cantidad) {
+        printf("Cantidad de bienes no valida\n");
+        liberar_lista(&personas);
+        liberar_lista(&comunas);
+        liberar_lista(&bienes);
+        liberar_lista(&servicios);
+        return 0;
+    }
+
+    printf("Cantidad de servicios activos (1-%d): ",
+           servicios.cantidad);
+
+    if (scanf("%d", &serviciosActivos) != 1 ||
+        serviciosActivos < 1 ||
+        serviciosActivos > servicios.cantidad) {
+        printf("Cantidad de servicios no valida\n");
+        liberar_lista(&personas);
+        liberar_lista(&comunas);
+        liberar_lista(&bienes);
+        liberar_lista(&servicios);
+        return 0;
+    }
+
+    sociedad->cantidadBienesActivos = bienesActivos;
+    sociedad->cantidadServiciosActivos = serviciosActivos;
+
+    /* Copia los bienes del catalogo */
     actual = bienes.inicio;
 
     while (actual != NULL) {
@@ -279,7 +421,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         actual = actual->siguiente;
     }
 
-    // Copia los servicios disponibles en el catalogo
+    /* Copia los servicios del catalogo */
     actual = servicios.inicio;
 
     while (actual != NULL) {
@@ -295,6 +437,53 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         actual = actual->siguiente;
     }
 
+    /* Crea solamente las comunas seleccionadas */
+    actual = comunas.inicio;
+
+    while (actual != NULL && sociedad->cantidadComunas <
+                              comunasActivas) {
+        if (!agregar_comuna(sociedad, actual->nombre)) {
+            liberar_lista(&personas);
+            liberar_lista(&comunas);
+            liberar_lista(&bienes);
+            liberar_lista(&servicios);
+            liberar_sociedad(sociedad);
+            return 0;
+        }
+
+        sociedad->cantidadComunas++;
+        actual = actual->siguiente;
+    }
+
+    /* Reparte la poblacion entre las comunas */
+    struct Comuna *comunaActual = sociedad->comunas;
+    int poblacionBase = sociedad->poblacionTotal / comunasActivas;
+    int personasExtra = sociedad->poblacionTotal % comunasActivas;
+    int numeroComuna = 0;
+
+    while (comunaActual != NULL) {
+        comunaActual->poblacion = poblacionBase;
+
+        if (numeroComuna < personasExtra) {
+            comunaActual->poblacion++;
+        }
+
+        if (!crear_existencias_comuna(sociedad, comunaActual)) {
+            liberar_lista(&personas);
+            liberar_lista(&comunas);
+            liberar_lista(&bienes);
+            liberar_lista(&servicios);
+            liberar_sociedad(sociedad);
+            return 0;
+        }
+
+        calcular_indices_comuna(comunaActual);
+
+        numeroComuna++;
+        comunaActual = comunaActual->siguiente;
+    }
+
+
     // Libera las listas temporales porque ya copiamos los datos
     liberar_lista(&personas);
     liberar_lista(&comunas);
@@ -302,6 +491,20 @@ int inicializar_sociedad(struct Sociedad *sociedad,
     liberar_lista(&servicios);
 
     return 1;
+}
+
+
+/* Libera una lista de existencias */
+void liberar_existencias(struct Existencia *lista) {
+    struct Existencia *actual;
+
+    while (lista != NULL) {
+        actual = lista;
+        lista = lista->siguiente;
+
+        free(actual->nombre);
+        free(actual);
+    }
 }
 
 // Libera toda la memoria de la sociedad
@@ -346,6 +549,8 @@ void liberar_sociedad(struct Sociedad *sociedad) {
     while (sociedad->comunas != NULL) {
         comuna = sociedad->comunas;
         sociedad->comunas = comuna->siguiente;
+        liberar_existencias(comuna->bienes);
+        liberar_existencias(comuna->servicios);
 
         free(comuna->nombre);
         free(comuna);
