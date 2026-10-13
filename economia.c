@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <string.h>
 #include "economia.h"
@@ -31,11 +32,11 @@ int realizar_trueque(struct Comuna *origen,
 
     // Valida los datos del trueque
     if (origen == NULL || destino == NULL ||
-    bienOrigen == NULL || bienDestino == NULL ||
-    origen == destino || cantidad <= 0 ||
-    strcmp(bienOrigen, bienDestino) == 0) {
-    printf("Datos del trueque no validos.\n");
-    return 0;
+        bienOrigen == NULL || bienDestino == NULL ||
+        origen == destino || cantidad <= 0 ||
+        strcmp(bienOrigen, bienDestino) == 0) {
+        printf("Datos del trueque no validos.\n");
+        return 0;
     }
 
     // Busca los bienes que se van a intercambiar
@@ -73,6 +74,12 @@ int realizar_trueque(struct Comuna *origen,
     entregaDestino->cantidad -= cantidad;
     recibeDestino->cantidad += cantidad;
 
+    // Aumenta el valor de los bienes involucrados un 5 %
+    entregaOrigen->valor *= 1.05f;
+    entregaDestino->valor *= 1.05f;
+    recibeOrigen->valor *= 1.05f;
+    recibeDestino->valor *= 1.05f;
+
     // Actualiza los indices despues del intercambio
     calcular_indices_comuna(origen);
     calcular_indices_comuna(destino);
@@ -89,11 +96,13 @@ int realizar_trueque_servicios(struct Comuna *origen,
                                const char *servicioOrigen,
                                const char *servicioDestino,
                                int cantidad) {
+
     struct Existencia *entregaOrigen;
     struct Existencia *entregaDestino;
     struct Existencia *recibeOrigen;
     struct Existencia *recibeDestino;
 
+    // Valida los datos del trueque
     if (origen == NULL || destino == NULL ||
         servicioOrigen == NULL || servicioDestino == NULL ||
         origen == destino || cantidad <= 0 ||
@@ -102,46 +111,48 @@ int realizar_trueque_servicios(struct Comuna *origen,
         return 0;
     }
 
+    // Busca los servicios que se van a intercambiar
     entregaOrigen = buscar_bien(origen->servicios, servicioOrigen);
     entregaDestino = buscar_bien(destino->servicios, servicioDestino);
+
     recibeOrigen = buscar_bien(origen->servicios, servicioDestino);
     recibeDestino = buscar_bien(destino->servicios, servicioOrigen);
 
+    // Comprueba que los cuatro servicios existan
     if (entregaOrigen == NULL || entregaDestino == NULL ||
-    recibeOrigen == NULL || recibeDestino == NULL) {
-    printf("Error buscando servicios para el trueque:\n");
-    printf("Servicio de origen '%s': %s\n",
-           servicioOrigen,
-           entregaOrigen ? "encontrado" : "NO encontrado");
-    printf("Servicio de destino '%s': %s\n",
-           servicioDestino,
-           entregaDestino ? "encontrado" : "NO encontrado");
-    printf("Servicio recibido por origen '%s': %s\n",
-           servicioDestino,
-           recibeOrigen ? "encontrado" : "NO encontrado");
-    printf("Servicio recibido por destino '%s': %s\n",
-           servicioOrigen,
-           recibeDestino ? "encontrado" : "NO encontrado");
-    return 0;
-}
+        recibeOrigen == NULL || recibeDestino == NULL) {
+        printf("No se encontraron todos los servicios necesarios.\n");
+        return 0;
+    }
 
+    // Comprueba que ambas comunas tengan suficientes servicios
     if (entregaOrigen->cantidad < cantidad ||
         entregaDestino->cantidad < cantidad) {
         printf("No hay suficientes servicios disponibles.\n");
         return 0;
     }
 
+    // Comprueba que las comunas puedan recibir los servicios
     if (recibeOrigen->cantidad + cantidad > recibeOrigen->maximo ||
         recibeDestino->cantidad + cantidad > recibeDestino->maximo) {
         printf("El trueque supera la capacidad maxima.\n");
         return 0;
     }
 
+    // Cada comuna entrega un servicio y recibe el de la otra
     entregaOrigen->cantidad -= cantidad;
     recibeOrigen->cantidad += cantidad;
+
     entregaDestino->cantidad -= cantidad;
     recibeDestino->cantidad += cantidad;
 
+    // Aumenta el valor de los servicios involucrados un 5 %
+    entregaOrigen->valor *= 1.05f;
+    entregaDestino->valor *= 1.05f;
+    recibeOrigen->valor *= 1.05f;
+    recibeDestino->valor *= 1.05f;
+
+    // Actualiza los indices despues del intercambio
     calcular_indices_comuna(origen);
     calcular_indices_comuna(destino);
 

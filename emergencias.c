@@ -57,7 +57,7 @@ void generar_emergencia(struct Sociedad *sociedad) {
 }
 
 
- // reduce la satisfaccion de las comunas cercanas a una emergencia
+// reduce la satisfaccion de las comunas cercanas a una emergencia
 void afectar_comunas_cercanas(struct Sociedad *sociedad,
                               struct Comuna *afectada) {
     struct Comuna *actual = sociedad->comunas;
@@ -94,20 +94,13 @@ void afectar_comunas_cercanas(struct Sociedad *sociedad,
         }
 
         if (distancia >= 1 && distancia <= 2) {
-            actual->satisfaccion -= 10;
+            actual->penalizacionEmergencia += 10;
 
-            if (actual->satisfaccion < 0) {
-                actual->satisfaccion = 0;
-            }
-
-            // muestra que la comuna cercana tambien fue afectada
             printf("la comuna %s tambien fue afectada por la emergencia\n",
                    actual->nombre);
-
-            printf("su satisfaccion ahora es: %.2f\n",
-                   actual->satisfaccion);
         }
 
+        // avanza siempre, aunque la comuna no sea afectada
         actual = actual->siguiente;
         posicion++;
     }

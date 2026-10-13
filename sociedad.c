@@ -137,6 +137,7 @@ int agregar_comuna(struct Sociedad *sociedad, const char *nombre) {
     nueva->necesidad = 0;
     nueva->satisfaccion = 0;
     nueva->siguiente = NULL;
+    nueva->penalizacionEmergencia = 0;
 
     // Agrega la comuna a la lista de comunas
     if (sociedad->comunas == NULL) {
@@ -204,6 +205,7 @@ int agregar_existencia(struct Existencia **lista, const char *nombre,
 
     nuevo->maximo = maximo;
     nuevo->cantidad = maximo * 4 / 5;
+    nuevo->valor = 1.0f;
     nuevo->siguiente = NULL;
 
     if (*lista == NULL) {
@@ -296,7 +298,97 @@ void calcular_indices_comuna(struct Comuna *comuna) {
         comuna->necesidad = 99.9f;
     }
 
-    comuna->satisfaccion = 100.0f - comuna->necesidad;
+    comuna->satisfaccion =
+    100.0f - comuna->necesidad
+    - comuna->penalizacionEmergencia;
+
+    if (comuna->satisfaccion < 0) {
+        comuna->satisfaccion = 0;
+    }
+}
+
+
+void calcular_indices_sociedad(struct Sociedad *sociedad) {
+    struct Comuna *actual;
+    struct Comuna *vecina;
+    float bienestarBase[50];
+    int cantidad = 0;
+    int i;
+    int j;
+
+    if (sociedad == NULL) {
+        return;
+    }
+
+    actual = sociedad->comunas;
+
+    /* Calcula los indices propios de cada comuna */
+    while (actual != NULL && cantidad < 50) {
+        calcular_indices_comuna(actual);
+
+        bienestarBase[cantidad] =
+            100.0f - actual->necesidad
+            - actual->penalizacionEmergencia;
+
+        if (bienestarBase[cantidad] < 0) {
+            bienestarBase[cantidad] = 0;
+        }
+
+        if (bienestarBase[cantidad] > 100) {
+            bienestarBase[cantidad] = 100;
+        }
+
+        actual = actual->siguiente;
+        cantidad++;
+    }
+
+    /* Combina el bienestar propio con el de las comunas cercanas */
+    actual = sociedad->comunas;
+
+    for (i = 0; actual != NULL && i < cantidad; i++) {
+        float sumaVecinas = 0;
+        int cantidadVecinas = 0;
+
+        vecina = sociedad->comunas;
+
+        for (j = 0; vecina != NULL && j < cantidad; j++) {
+            int distancia = i - j;
+
+            if (distancia < 0) {
+                distancia = -distancia;
+            }
+
+            if (distancia >= 1 && distancia <= 2) {
+                sumaVecinas += bienestarBase[j];
+                cantidadVecinas++;
+            }
+
+            vecina = vecina->siguiente;
+        }
+
+        if (cantidadVecinas > 0) {
+            float bienestarPropio = 100.0f - actual->necesidad;
+            float promedioVecinas = sumaVecinas / cantidadVecinas;
+
+            actual->satisfaccion =
+                0.7f * bienestarPropio
+                + 0.3f * promedioVecinas;
+        } else {
+            actual->satisfaccion =
+                100.0f - actual->necesidad
+                - actual->penalizacionEmergencia;
+        }
+
+        if (actual->satisfaccion < 0) {
+            actual->satisfaccion = 0;
+        }
+
+        if (actual->satisfaccion > 100) {
+            actual->satisfaccion = 100;
+        }
+
+        actual = actual->siguiente;
+    }
 }
 
 // Carga los datos iniciales de la sociedad

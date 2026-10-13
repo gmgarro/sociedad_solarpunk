@@ -22,8 +22,8 @@ void mostrar_comunas(struct Sociedad *sociedad) {
         actual = comuna->bienes;
 
         while (actual != NULL) {
-            printf("- %s: %d\n",
-                   actual->nombre, actual->cantidad);
+        printf("- %s: cantidad = %d, valor = %.2f\n",
+           actual->nombre, actual->cantidad, actual->valor);
             actual = actual->siguiente;
         }
 
@@ -32,8 +32,8 @@ void mostrar_comunas(struct Sociedad *sociedad) {
         actual = comuna->servicios;
 
         while (actual != NULL) {
-            printf("- %s: %d\n",
-                   actual->nombre, actual->cantidad);
+        printf("- %s: cantidad = %d, valor = %.2f\n",
+           actual->nombre, actual->cantidad, actual->valor);
             actual = actual->siguiente;
         }
 
@@ -149,9 +149,12 @@ int main(void) {
         return 1;
     }
 
+    calcular_indices_sociedad(&sociedad);
+
     printf("\n===== estado inicial =====\n");
     mostrar_comunas(&sociedad);
     menu_trueque(&sociedad);
+    calcular_indices_sociedad(&sociedad);
     mostrar_comunas(&sociedad);
 
     // ejecuta la simulacion durante diez dias
@@ -160,5 +163,6 @@ int main(void) {
 
     menu_trueque(&sociedad);
     aplicar_consumo_diario(&sociedad);
+    calcular_indices_sociedad(&sociedad);
     mostrar_comunas(&sociedad);
 }}
