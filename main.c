@@ -1,63 +1,93 @@
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include "sociedad.h"
+#include "simulacion.h"
 
-// Muestra los bienes y servicios de una comuna
-void mostrar_existencias(char *titulo, struct Existencia *lista) {
-    printf("%s:\n", titulo);
+// muestra los bienes y servicios de una comuna
+void mostrar_existencias(struct Comuna *comuna) {
+    struct Existencia *actual;
 
-    while (lista != NULL) {
-        printf("  %s: %d / %d\n",
-               lista->nombre, lista->cantidad, lista->maximo);
+    printf("\ncomuna: %s\n", comuna->nombre);
+    printf("poblacion: %d\n", comuna->poblacion);
 
-        lista = lista->siguiente;
+    // muestra los bienes disponibles
+    printf("\nbienes:\n");
+    actual = comuna->bienes;
+
+    while (actual != NULL) {
+        printf("%s: %d/%d\n",
+               actual->nombre,
+               actual->cantidad,
+               actual->maximo);
+
+        actual = actual->siguiente;
     }
+
+    // muestra los servicios disponibles
+    printf("\nservicios:\n");
+    actual = comuna->servicios;
+
+    while (actual != NULL) {
+        printf("%s: %d/%d\n",
+               actual->nombre,
+               actual->cantidad,
+               actual->maximo);
+
+        actual = actual->siguiente;
+    }
+
+    printf("\nnecesidad: %.2f%%\n", comuna->necesidad);
+    printf("satisfaccion: %.2f%%\n", comuna->satisfaccion);
 }
 
-// Muestra los datos de cada comuna
-void mostrar_comunas(struct Comuna *comuna) {
-    while (comuna != NULL) {
-        printf("\n-----------------------------\n");
-        printf("Comuna: %s\n", comuna->nombre);
-        printf("Poblacion: %d\n", comuna->poblacion);
-
-        mostrar_existencias("Bienes", comuna->bienes);
-        mostrar_existencias("Servicios", comuna->servicios);
-
-        printf("Necesidad: %.2f%%\n", comuna->necesidad);
-        printf("Satisfaccion: %.2f%%\n", comuna->satisfaccion);
-
-        comuna = comuna->siguiente;
-    }
-}
-
-// Carga los datos y muestra la informacion de la sociedad
+// ejecuta la prueba del consumo diario
 int main(void) {
     struct Sociedad sociedad;
 
-    int resultado = inicializar_sociedad(
-        &sociedad,
-        "Datos/personas",
-        "Datos/comunas",
-        "Datos/bienes",
-        "Datos/servicios"
-    );
+    // prepara los numeros aleatorios
+    srand(time(NULL));
 
-    if (!resultado) {
-        printf("Error al cargar los datos\n");
+    // carga los datos de los archivos
+    if (!inicializar_sociedad(&sociedad,
+                              "Datos/personas",
+                              "Datos/comunas",
+                              "Datos/bienes",
+                              "Datos/servicios")) {
+        printf("\nno se pudo inicializar la sociedad\n");
         return 1;
     }
 
-    printf("\n===== SOCIEDAD SOLARPUNK =====\n");
-    printf("Personas: %d\n", sociedad.poblacionTotal);
-    printf("Comunas activas: %d\n", sociedad.cantidadComunas);
-    printf("Bienes activos: %d\n", sociedad.cantidadBienesActivos);
-    printf("Servicios activos: %d\n", sociedad.cantidadServiciosActivos);
+    // muestra los datos generales
+    printf("\n--- sociedad inicializada ---\n");
+    printf("poblacion total: %d\n", sociedad.poblacionTotal);
+    printf("cantidad de comunas: %d\n", sociedad.cantidadComunas);
+    printf("bienes activos: %d\n", sociedad.cantidadBienesActivos);
+    printf("servicios activos: %d\n", sociedad.cantidadServiciosActivos);
+    printf("dia actual: %d\n", sociedad.dia);
 
-    mostrar_comunas(sociedad.comunas);
+    // muestra las existencias iniciales de la primera comuna
+    if (sociedad.comunas != NULL) {
+        printf("\n--- antes del consumo ---\n");
+        mostrar_existencias(sociedad.comunas);
 
+        // aplica el consumo de 5 dias
+        for (int i = 0; i < 5; i++) {
+            aplicar_consumo_diario(&sociedad);
+        }
+
+        // muestra las existencias despues del consumo
+        printf("\n--- despues del consumo ---\n");
+        mostrar_existencias(sociedad.comunas);
+
+        printf("\ndia actual: %d\n", sociedad.dia);
+    } else {
+        printf("\nno hay comunas para probar el consumo\n");
+    }
+
+    // libera la memoria utilizada por la sociedad
     liberar_sociedad(&sociedad);
 
     return 0;
 }
-
-

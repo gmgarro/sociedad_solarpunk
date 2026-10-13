@@ -60,4 +60,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
 
 void liberar_sociedad(struct Sociedad *sociedad);
 
+//calcula los indices de necesidad y satisfaccion de una comuna
+void calcular_indices_comuna(struct Comuna *comuna);
+
 #endif
