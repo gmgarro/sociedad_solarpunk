@@ -1,0 +1,23 @@
+SOCIEDAD SOLARPUNK
+
+Repositorio de GitHub:
+https://github.com/gmgarro/sociedad_solarpunk.git
+
+REQUISITOS
+- Tener instalado GCC.
+- Abrir una terminal en la carpeta principal del proyecto.
+
+COMPILACIÓN
+
+Ejecutar el siguiente comando:
+
+gcc -Wall -Wextra -std=c11 main.c listas.c archivos.c sociedad.c consumo.c emergencias.c economia.c -o programa
+
+EJECUCIÓN
+
+Después de compilar, ejecutar:
+
+./programa
+
+IMPORTANTE
+Mantener los archivos de datos y las carpetas necesarias en sus rutas originales para que el programa funcione correctamente.
