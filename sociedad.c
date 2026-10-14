@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Hace una copia del nombre para guardarlo en memoria
+// hace una copia del nombre para guardarlo en memoria
 char *copiar_texto(const char *texto) {
     char *copia = malloc(strlen(texto) + 1);
 
@@ -18,7 +18,7 @@ char *copiar_texto(const char *texto) {
     return copia;
 }
 
-// Agrega una persona a la lista
+// agrega una persona a la lista
 int agregar_persona(struct Sociedad *sociedad, const char *nombre) {
     struct NodoNombre *nuevo = malloc(sizeof(struct NodoNombre));
 
@@ -50,7 +50,7 @@ int agregar_persona(struct Sociedad *sociedad, const char *nombre) {
     return 1;
 }
 
-// Agrega un bien al catalogo de bienes
+// agrega un bien al catalogo de bienes
 int agregar_bien(struct Sociedad *sociedad, const char *nombre) {
     struct NodoNombreDoble *nuevo = malloc(sizeof(struct NodoNombreDoble));
 
@@ -84,7 +84,7 @@ int agregar_bien(struct Sociedad *sociedad, const char *nombre) {
     return 1;
 }
 
-// Agrega un servicio al catalogo de servicios
+// agrega un servicio al catalogo de servicios
 int agregar_servicio(struct Sociedad *sociedad, const char *nombre) {
     struct NodoNombre *nuevo = malloc(sizeof(struct NodoNombre));
 
@@ -116,9 +116,11 @@ int agregar_servicio(struct Sociedad *sociedad, const char *nombre) {
     return 1;
 }
 
-// Agrega una comuna y guarda su nombre en la lista doble
+
+ // agrega una comuna y guarda su nombre en la lista doble
 int agregar_comuna(struct Sociedad *sociedad, const char *nombre) {
     struct Comuna *nueva = malloc(sizeof(struct Comuna));
+    struct NodoNombreDoble *nuevoNombre;
 
     if (nueva == NULL) {
         return 0;
@@ -131,15 +133,38 @@ int agregar_comuna(struct Sociedad *sociedad, const char *nombre) {
         return 0;
     }
 
+    // inicializa los datos de la comuna
     nueva->poblacion = 0;
     nueva->bienes = NULL;
     nueva->servicios = NULL;
     nueva->necesidad = 0;
     nueva->satisfaccion = 0;
-    nueva->siguiente = NULL;
     nueva->penalizacionEmergencia = 0;
+    nueva->anterior = NULL;
+    nueva->siguiente = NULL;
 
-    // Agrega la comuna a la lista de comunas
+    // reserva memoria para guardar tambien el nombre
+    nuevoNombre = malloc(sizeof(struct NodoNombreDoble));
+
+    if (nuevoNombre == NULL) {
+        free(nueva->nombre);
+        free(nueva);
+        return 0;
+    }
+
+    nuevoNombre->nombre = copiar_texto(nombre);
+
+    if (nuevoNombre->nombre == NULL) {
+        free(nuevoNombre);
+        free(nueva->nombre);
+        free(nueva);
+        return 0;
+    }
+
+    nuevoNombre->anterior = NULL;
+    nuevoNombre->siguiente = NULL;
+
+    // agrega la comuna a la lista principal
     if (sociedad->comunas == NULL) {
         sociedad->comunas = nueva;
     } else {
@@ -150,26 +175,10 @@ int agregar_comuna(struct Sociedad *sociedad, const char *nombre) {
         }
 
         actual->siguiente = nueva;
+        nueva->anterior = actual;
     }
 
-    // Guarda tambien el nombre en la lista doble
-    struct NodoNombreDoble *nuevoNombre;
-    nuevoNombre = malloc(sizeof(struct NodoNombreDoble));
-
-    if (nuevoNombre == NULL) {
-        return 0;
-    }
-
-    nuevoNombre->nombre = copiar_texto(nombre);
-
-    if (nuevoNombre->nombre == NULL) {
-        free(nuevoNombre);
-        return 0;
-    }
-
-    nuevoNombre->anterior = NULL;
-    nuevoNombre->siguiente = NULL;
-
+    // agrega el nombre a la lista doble
     if (sociedad->nombresComunas == NULL) {
         sociedad->nombresComunas = nuevoNombre;
     } else {
@@ -187,7 +196,8 @@ int agregar_comuna(struct Sociedad *sociedad, const char *nombre) {
 }
 
 
-/* Agrega un bien o servicio a las existencias de una comuna */
+
+// agrega un bien o servicio a las existencias de una comuna
 int agregar_existencia(struct Existencia **lista, const char *nombre,
                        int maximo) {
     struct Existencia *nuevo = malloc(sizeof(struct Existencia));
@@ -223,7 +233,7 @@ int agregar_existencia(struct Existencia **lista, const char *nombre,
     return 1;
 }
 
-/* Crea las existencias de una comuna */
+// crea las existencias de una comuna
 int crear_existencias_comuna(struct Sociedad *sociedad,
                              struct Comuna *comuna) {
     struct NodoNombreDoble *bien = sociedad->catalogoBienes;
@@ -259,7 +269,7 @@ int crear_existencias_comuna(struct Sociedad *sociedad,
     return 1;
 }
 
-/* Calcula la necesidad y satisfaccion inicial */
+// calcula la necesidad y la satisfaccion de una comuna
 void calcular_indices_comuna(struct Comuna *comuna) {
     struct Existencia *actual;
     int maximoTotal = 0;
@@ -308,6 +318,7 @@ void calcular_indices_comuna(struct Comuna *comuna) {
 }
 
 
+// calcula los indices de todas las comunas y mezcla la satisfaccion con la de las cercanas
 void calcular_indices_sociedad(struct Sociedad *sociedad) {
     struct Comuna *actual;
     struct Comuna *vecina;
@@ -322,7 +333,7 @@ void calcular_indices_sociedad(struct Sociedad *sociedad) {
 
     actual = sociedad->comunas;
 
-    /* Calcula los indices propios de cada comuna */
+    // calcula los indices propios de cada comuna
     while (actual != NULL && cantidad < 50) {
         calcular_indices_comuna(actual);
 
@@ -342,7 +353,7 @@ void calcular_indices_sociedad(struct Sociedad *sociedad) {
         cantidad++;
     }
 
-    /* Combina el bienestar propio con el de las comunas cercanas */
+    // combina el bienestar propio con el de las comunas cercanas
     actual = sociedad->comunas;
 
     for (i = 0; actual != NULL && i < cantidad; i++) {
@@ -367,7 +378,7 @@ void calcular_indices_sociedad(struct Sociedad *sociedad) {
         }
 
         if (cantidadVecinas > 0) {
-            float bienestarPropio = 100.0f - actual->necesidad;
+            float bienestarPropio = bienestarBase[i];
             float promedioVecinas = sumaVecinas / cantidadVecinas;
 
             actual->satisfaccion =
@@ -391,19 +402,20 @@ void calcular_indices_sociedad(struct Sociedad *sociedad) {
     }
 }
 
-// Carga los datos iniciales de la sociedad
+// carga los datos iniciales de la sociedad
 int inicializar_sociedad(struct Sociedad *sociedad,
                          const char *archivoPersonas,
                          const char *archivoComunas,
                          const char *archivoBienes,
                          const char *archivoServicios) {
 
-    // Deja la sociedad vacia antes de empezar
+    // deja la sociedad vacia antes de empezar
     sociedad->poblacionTotal = 0;
     sociedad->cantidadComunas = 0;
     sociedad->cantidadBienesActivos = 0;
     sociedad->cantidadServiciosActivos = 0;
     sociedad->dia = 0;
+    sociedad->diasParaEmergencia = (rand() % 5) + 3;
 
     sociedad->personas = NULL;
     sociedad->catalogoServicios = NULL;
@@ -411,7 +423,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
     sociedad->nombresComunas = NULL;
     sociedad->comunas = NULL;
 
-    // Listas temporales para leer los archivos
+    // listas temporales para leer los archivos
     Lista personas;
     Lista comunas;
     Lista bienes;
@@ -422,7 +434,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
     inicializar_lista(&bienes);
     inicializar_lista(&servicios);
 
-    // Lee los cuatro archivos
+    // lee los cuatro archivos
     if (!cargar_archivo(archivoPersonas, &personas) ||
         !cargar_archivo(archivoComunas, &comunas) ||
         !cargar_archivo(archivoBienes, &bienes) ||
@@ -435,7 +447,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         return 0;
     }
 
-    // Copia los nombres de las personas
+    // copia los nombres de las personas
     Nodo *actual = personas.inicio;
 
     while (actual != NULL) {
@@ -452,7 +464,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         actual = actual->siguiente;
     }
 
-    // Crea las comunas
+    // crea las comunas
     
     int comunasActivas;
     int bienesActivos;
@@ -469,6 +481,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         liberar_lista(&comunas);
         liberar_lista(&bienes);
         liberar_lista(&servicios);
+        liberar_sociedad(sociedad);
         return 0;
     }
 
@@ -483,6 +496,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         liberar_lista(&comunas);
         liberar_lista(&bienes);
         liberar_lista(&servicios);
+        liberar_sociedad(sociedad);
         return 0;
     }
 
@@ -497,13 +511,14 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         liberar_lista(&comunas);
         liberar_lista(&bienes);
         liberar_lista(&servicios);
+        liberar_sociedad(sociedad);
         return 0;
     }
 
     sociedad->cantidadBienesActivos = bienesActivos;
     sociedad->cantidadServiciosActivos = serviciosActivos;
 
-    /* Copia los bienes del catalogo */
+    // copia los bienes del catalogo
     actual = bienes.inicio;
 
     while (actual != NULL) {
@@ -519,7 +534,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         actual = actual->siguiente;
     }
 
-    /* Copia los servicios del catalogo */
+    // copia los servicios del catalogo
     actual = servicios.inicio;
 
     while (actual != NULL) {
@@ -535,7 +550,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         actual = actual->siguiente;
     }
 
-    /* Crea solamente las comunas seleccionadas */
+    // crea solamente las comunas seleccionadas
     actual = comunas.inicio;
 
     while (actual != NULL && sociedad->cantidadComunas <
@@ -553,7 +568,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
         actual = actual->siguiente;
     }
 
-    /* Reparte la poblacion entre las comunas */
+    // reparte la poblacion entre las comunas
     struct Comuna *comunaActual = sociedad->comunas;
     int poblacionBase = sociedad->poblacionTotal / comunasActivas;
     int personasExtra = sociedad->poblacionTotal % comunasActivas;
@@ -582,7 +597,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
     }
 
 
-    // Libera las listas temporales porque ya copiamos los datos
+    // libera las listas temporales porque ya copiamos los datos
     liberar_lista(&personas);
     liberar_lista(&comunas);
     liberar_lista(&bienes);
@@ -592,7 +607,7 @@ int inicializar_sociedad(struct Sociedad *sociedad,
 }
 
 
-/* Libera una lista de existencias */
+// libera una lista de existencias
 void liberar_existencias(struct Existencia *lista) {
     struct Existencia *actual;
 
@@ -605,7 +620,7 @@ void liberar_existencias(struct Existencia *lista) {
     }
 }
 
-// Libera toda la memoria de la sociedad
+// libera toda la memoria de la sociedad
 void liberar_sociedad(struct Sociedad *sociedad) {
     struct NodoNombre *persona;
     struct NodoNombreDoble *bien;

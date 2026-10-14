@@ -1,4 +1,5 @@
 
+#include <stdio.h>
 #include <stdlib.h>
 #include "consumo.h"
 #include "emergencias.h"
@@ -29,6 +30,15 @@ void aplicar_consumo_diario(struct Sociedad *sociedad) {
         consumir_existencias(comuna->bienes);
         consumir_existencias(comuna->servicios);
 
+        // la penalizacion de las emergencias se recupera de a poco
+        if (comuna->penalizacionEmergencia > 0) {
+            comuna->penalizacionEmergencia -= 2;
+
+            if (comuna->penalizacionEmergencia < 0) {
+                comuna->penalizacionEmergencia = 0;
+            }
+        }
+
         // actualiza la necesidad y satisfaccion
         calcular_indices_comuna(comuna);
 
@@ -38,8 +48,13 @@ void aplicar_consumo_diario(struct Sociedad *sociedad) {
     // avanza al siguiente dia
     sociedad->dia++;
 
-    // genera una emergencia cada cinco dias
-    if (sociedad->dia % 5 == 0) {
+    // cuenta los dias que faltan para la proxima emergencia
+    sociedad->diasParaEmergencia--;
+
+    if (sociedad->diasParaEmergencia <= 0) {
         generar_emergencia(sociedad);
+
+        // la proxima emergencia sale entre 3 y 7 dias despues
+        sociedad->diasParaEmergencia = (rand() % 5) + 3;
     }
 }

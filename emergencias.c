@@ -4,15 +4,39 @@
 #include "emergencias.h"
 #include "sociedad.h"
 
+// quita el 25 % de la cantidad de cada bien o servicio de una lista
+static void perder_cuarto(struct Existencia *lista) {
+    struct Existencia *actual = lista;
 
- // genera una emergencia en una comuna aleatoria
+    while (actual != NULL) {
+        int reduccion = actual->cantidad / 4;
+
+        // solo muestra lo que de verdad se perdio
+        if (reduccion > 0) {
+            actual->cantidad -= reduccion;
+
+            printf("%s: se perdieron %d unidades\n",
+                   actual->nombre, reduccion);
+        }
+
+        actual = actual->siguiente;
+    }
+}
+
+// genera una emergencia en una comuna aleatoria
 void generar_emergencia(struct Sociedad *sociedad) {
     struct Comuna *comuna = sociedad->comunas;
     struct Comuna *afectada;
-    struct Existencia *bien;
     int cantidadComunas = 0;
     int posicion;
     int i;
+
+    if(sociedad == NULL)
+    {
+        return;
+    }
+
+    comuna = sociedad->comunas;
 
     // cuenta las comunas disponibles
     while (comuna != NULL) {
@@ -35,73 +59,44 @@ void generar_emergencia(struct Sociedad *sociedad) {
 
     printf("\n¡emergencia en la comuna %s!\n", afectada->nombre);
 
-    // reduce el 25 por ciento de cada bien
-    bien = afectada->bienes;
+    // la comuna afectada pierde el 25 % de sus bienes y servicios
+    printf("bienes:\n");
+    perder_cuarto(afectada->bienes);
 
-    while (bien != NULL) {
-        int reduccion = bien->cantidad / 4;
+    printf("servicios:\n");
+    perder_cuarto(afectada->servicios);
 
-        bien->cantidad -= reduccion;
-
-        printf("%s: se perdieron %d unidades\n",
-               bien->nombre, reduccion);
-
-        bien = bien->siguiente;
-    }
+    // la satisfaccion de la comuna afectada baja directo
+    afectada->penalizacionEmergencia += 20;
 
     // actualiza la necesidad y satisfaccion de la comuna afectada
     calcular_indices_comuna(afectada);
 
     // reduce la satisfaccion de las comunas cercanas
-    afectar_comunas_cercanas(sociedad, afectada);
+    afectar_comunas_cercanas(afectada);
 }
 
-
-// reduce la satisfaccion de las comunas cercanas a una emergencia
-void afectar_comunas_cercanas(struct Sociedad *sociedad,
-                              struct Comuna *afectada) {
-    struct Comuna *actual = sociedad->comunas;
-    int posicion = 0;
-    int posicionAfectada = 0;
-    int encontrada = 0;
-
-    // busca la posicion de la comuna afectada
-    while (actual != NULL) {
-        if (actual == afectada) {
-            posicionAfectada = posicion;
-            encontrada = 1;
-            break;
-        }
-
-        actual = actual->siguiente;
-        posicion++;
-    }
-
-    // revisa si encontro la comuna
-    if (!encontrada) {
+// baja la satisfaccion de una comuna cercana (si existe)
+static void penalizar_cercana(struct Comuna *cercana) {
+    if (cercana == NULL) {
         return;
     }
 
-    actual = sociedad->comunas;
-    posicion = 0;
+    cercana->penalizacionEmergencia += 10;
 
-    // busca las comunas que estan a una o dos posiciones
-    while (actual != NULL) {
-        int distancia = posicion - posicionAfectada;
+    // actualiza la necesidad y satisfaccion
+    calcular_indices_comuna(cercana);
 
-        if (distancia < 0) {
-            distancia = -distancia;
-        }
+    printf("la comuna %s tambien fue afectada por la emergencia\n",
+           cercana->nombre);
+}
 
-        if (distancia >= 1 && distancia <= 2) {
-            actual->penalizacionEmergencia += 10;
+// las cercanas son la anterior, la siguiente y la siguiente de la siguiente
+void afectar_comunas_cercanas(struct Comuna *afectada) {
+    penalizar_cercana(afectada->anterior);
+    penalizar_cercana(afectada->siguiente);
 
-            printf("la comuna %s tambien fue afectada por la emergencia\n",
-                   actual->nombre);
-        }
-
-        // avanza siempre, aunque la comuna no sea afectada
-        actual = actual->siguiente;
-        posicion++;
+    if (afectada->siguiente != NULL) {
+        penalizar_cercana(afectada->siguiente->siguiente);
     }
 }
