@@ -5,8 +5,9 @@
 #include "sociedad.h"
 #include "consumo.h"
 #include "economia.h"
+#include "emergencias.h"
 
-// colores para organizar la informacion en la terminal
+// colores para mostrar los mensajes
 #define VERDE "\033[32m"
 #define ROJO "\033[31m"
 #define AMARILLO "\033[33m"
@@ -15,26 +16,26 @@
 #define NEGRITA "\033[1m"
 #define RESET "\033[0m"
 
-// muestra un titulo para separar las secciones
+// muestra un titulo en pantalla
 void mostrar_titulo(const char *titulo) {
     printf("\n" CIAN NEGRITA);
-    printf("=======================================================\n");
+    printf("========================================\n");
     printf("  %s\n", titulo);
-    printf("=======================================================\n");
+    printf("========================================\n");
     printf(RESET);
 }
 
 // muestra un mensaje de error
 void mostrar_error(const char *mensaje) {
-    printf(ROJO "[!] %s\n" RESET, mensaje);
+    printf(ROJO "\n[!] %s\n" RESET, mensaje);
 }
 
-// muestra un mensaje exitoso
+// muestra un mensaje de exito
 void mostrar_exito(const char *mensaje) {
-    printf(VERDE "[+] %s\n" RESET, mensaje);
+    printf(VERDE "\n[+] %s\n" RESET, mensaje);
 }
 
-// limpia los caracteres que quedan cuando se escribe una opcion incorrecta
+// limpia los datos que quedaron en la entrada
 void limpiar_entrada(void) {
     int caracter;
 
@@ -42,67 +43,70 @@ void limpiar_entrada(void) {
     }
 }
 
-// muestra las existencias de todas las comunas
+// pide un numero dentro de un rango valido
+int pedir_opcion(const char *mensaje, int minimo, int maximo) {
+    int opcion;
+
+    while (1) {
+        printf("%s", mensaje);
+
+        if (scanf("%d", &opcion) != 1) {
+            limpiar_entrada();
+            mostrar_error("Entrada no valida. Ingrese un numero.");
+            continue;
+        }
+
+        limpiar_entrada();
+
+        if (opcion < minimo || opcion > maximo) {
+            mostrar_error("Opcion fuera de rango. Intente de nuevo.");
+            continue;
+        }
+
+        return opcion;
+    }
+}
+
+// muestra el estado actual de las comunas
 void mostrar_comunas(struct Sociedad *sociedad) {
     struct Comuna *comuna = sociedad->comunas;
-    struct Existencia *actual;
+
+    mostrar_titulo("ESTADO DE LAS COMUNAS");
+
+    if (comuna == NULL) {
+        mostrar_error("No hay comunas para mostrar.");
+        return;
+    }
+
+    printf("%-22s %10s %12s %14s\n",
+           "Comuna", "Poblacion", "Necesidad", "Satisfaccion");
+
+    printf("--------------------------------------------------------------\n");
 
     while (comuna != NULL) {
-        printf("\n" AZUL "-------------------------------------------------------\n" RESET);
-        printf(NEGRITA "  COMUNA: %s\n" RESET, comuna->nombre);
-        printf("  Poblacion: %d personas\n", comuna->poblacion);
+        printf("%-22s %10d ", comuna->nombre, comuna->poblacion);
 
-        printf("\n" VERDE "  BIENES\n" RESET);
-        actual = comuna->bienes;
-
-        if (actual == NULL) {
-            printf("  No hay bienes registrados.\n");
-        }
-
-        while (actual != NULL) {
-            printf("  - %-22s cantidad: %-5d valor: %.2f\n",
-                   actual->nombre, actual->cantidad, actual->valor);
-            actual = actual->siguiente;
-        }
-
-        printf("\n" CIAN "  SERVICIOS\n" RESET);
-        actual = comuna->servicios;
-
-        if (actual == NULL) {
-            printf("  No hay servicios registrados.\n");
-        }
-
-        while (actual != NULL) {
-            printf("  - %-22s cantidad: %-5d valor: %.2f\n",
-                   actual->nombre, actual->cantidad, actual->valor);
-            actual = actual->siguiente;
-        }
-
-        printf("\n  Necesidad: ");
         if (comuna->necesidad >= 70) {
-            printf(ROJO "%.2f\n" RESET, comuna->necesidad);
+            printf(ROJO "%12.2f " RESET, comuna->necesidad);
         } else if (comuna->necesidad >= 40) {
-            printf(AMARILLO "%.2f\n" RESET, comuna->necesidad);
+            printf(AMARILLO "%12.2f " RESET, comuna->necesidad);
         } else {
-            printf(VERDE "%.2f\n" RESET, comuna->necesidad);
+            printf(VERDE "%12.2f " RESET, comuna->necesidad);
         }
 
-        printf("  Satisfaccion: ");
         if (comuna->satisfaccion >= 70) {
-            printf(VERDE "%.2f\n" RESET, comuna->satisfaccion);
+            printf(VERDE "%14.2f\n" RESET, comuna->satisfaccion);
         } else if (comuna->satisfaccion >= 40) {
-            printf(AMARILLO "%.2f\n" RESET, comuna->satisfaccion);
+            printf(AMARILLO "%14.2f\n" RESET, comuna->satisfaccion);
         } else {
-            printf(ROJO "%.2f\n" RESET, comuna->satisfaccion);
+            printf(ROJO "%14.2f\n" RESET, comuna->satisfaccion);
         }
 
         comuna = comuna->siguiente;
     }
-
-    printf(AZUL "-------------------------------------------------------\n" RESET);
 }
 
-// permite seleccionar un bien o servicio por numero
+// permite seleccionar un bien o servicio
 struct Existencia *seleccionar_existencia(
     struct Existencia *lista, const char *mensaje) {
 
@@ -121,22 +125,12 @@ struct Existencia *seleccionar_existencia(
     while (actual != NULL) {
         printf("  %d. %-22s cantidad: %d, valor: %.2f\n",
                i, actual->nombre, actual->cantidad, actual->valor);
+
         actual = actual->siguiente;
         i++;
     }
 
-    printf("\nSeleccione una opcion: ");
-
-    if (scanf("%d", &opcion) != 1) {
-        limpiar_entrada();
-        mostrar_error("Debe ingresar un numero.");
-        return NULL;
-    }
-
-    if (opcion < 1 || opcion >= i) {
-        mostrar_error("La opcion seleccionada no existe.");
-        return NULL;
-    }
+    opcion = pedir_opcion("\nSeleccione una opcion: ", 1, i - 1);
 
     seleccionado = lista;
 
@@ -147,10 +141,11 @@ struct Existencia *seleccionar_existencia(
     return seleccionado;
 }
 
-// permite realizar un trueque entre dos comunas
+// permite intercambiar bienes o servicios entre dos comunas
 void menu_trueque(struct Sociedad *sociedad) {
     struct Comuna *origen;
     struct Comuna *destino;
+    struct Comuna *actual;
     struct Existencia *elementoOrigen;
     struct Existencia *elementoDestino;
     struct Existencia *listaOrigen;
@@ -159,90 +154,64 @@ void menu_trueque(struct Sociedad *sociedad) {
     int numero;
     int i;
     int cantidad;
+    int resultado;
 
     mostrar_titulo("MENU DE TRUEQUE");
 
-    printf("Seleccione el tipo de intercambio:\n\n");
-    printf("  " VERDE "1." RESET " Intercambiar bienes\n");
-    printf("  " CIAN "2." RESET " Intercambiar servicios\n");
-    printf("  " AMARILLO "0." RESET " Continuar sin intercambiar\n\n");
-    printf("Opcion: ");
+    printf("1. Intercambiar bienes\n");
+    printf("2. Intercambiar servicios\n");
+    printf("0. Continuar sin intercambiar\n\n");
 
-    if (scanf("%d", &tipo) != 1) {
-        limpiar_entrada();
-        mostrar_error("Debe ingresar un numero.");
-        return;
-    }
-
-    if (tipo < 0 || tipo > 2) {
-        mostrar_error("La opcion no es valida.");
-        return;
-    }
+    tipo = pedir_opcion("Opcion: ", 0, 2);
 
     if (tipo == 0) {
-        printf(AMARILLO "\nNo se realizara ningun trueque.\n" RESET);
+        printf(AMARILLO "\nSe continua sin realizar trueques.\n" RESET);
         return;
     }
 
-    // muestra las comunas disponibles
+    if (sociedad->cantidadComunas < 2) {
+        mostrar_error("Se necesitan al menos dos comunas para intercambiar.");
+        return;
+    }
+
     printf("\n" NEGRITA "COMUNAS DISPONIBLES\n" RESET);
-    origen = sociedad->comunas;
+
+    actual = sociedad->comunas;
     i = 1;
 
-    while (origen != NULL) {
-        printf("  %d. %s\n", i++, origen->nombre);
-        origen = origen->siguiente;
+    while (actual != NULL) {
+        printf("  %d. %s\n", i, actual->nombre);
+        actual = actual->siguiente;
+        i++;
     }
 
-    printf("\nNumero de la comuna que entrega: ");
-
-    if (scanf("%d", &numero) != 1) {
-        limpiar_entrada();
-        mostrar_error("Debe ingresar un numero.");
-        return;
-    }
-
-    if (numero < 1) {
-        mostrar_error("La comuna seleccionada no existe.");
-        return;
-    }
+    numero = pedir_opcion("\nNumero de la comuna que entrega: ",
+                          1, sociedad->cantidadComunas);
 
     origen = sociedad->comunas;
 
-    for (i = 1; origen != NULL && i < numero; i++) {
+    for (i = 1; i < numero; i++) {
         origen = origen->siguiente;
     }
 
-    if (origen == NULL) {
-        mostrar_error("La comuna seleccionada no existe.");
-        return;
-    }
+    // vuelve a pedir la comuna si se selecciona la misma
+    do {
+        numero = pedir_opcion("Numero de la comuna que recibe: ",
+                              1, sociedad->cantidadComunas);
 
-    printf("Numero de la comuna que recibe: ");
+        destino = sociedad->comunas;
 
-    if (scanf("%d", &numero) != 1) {
-        limpiar_entrada();
-        mostrar_error("Debe ingresar un numero.");
-        return;
-    }
+        for (i = 1; i < numero; i++) {
+            destino = destino->siguiente;
+        }
 
-    if (numero < 1) {
-        mostrar_error("La comuna seleccionada no existe.");
-        return;
-    }
+        if (destino == origen) {
+            mostrar_error("Debe seleccionar una comuna diferente.");
+        }
 
-    destino = sociedad->comunas;
+    } while (destino == origen);
 
-    for (i = 1; destino != NULL && i < numero; i++) {
-        destino = destino->siguiente;
-    }
-
-    if (destino == NULL || destino == origen) {
-        mostrar_error("Seleccione una comuna diferente a la de origen.");
-        return;
-    }
-
-    // selecciona las listas segun el tipo de trueque
+    // selecciona las listas segun el tipo de intercambio
     if (tipo == 1) {
         listaOrigen = origen->bienes;
         listaDestino = destino->bienes;
@@ -251,7 +220,8 @@ void menu_trueque(struct Sociedad *sociedad) {
         listaDestino = destino->servicios;
     }
 
-    printf("\n" AZUL "Origen: %s\n" RESET, origen->nombre);
+    printf("\n" AZUL "Comuna que entrega: %s\n" RESET, origen->nombre);
+
     elementoOrigen = seleccionar_existencia(
         listaOrigen, "Seleccione lo que entrega esta comuna:");
 
@@ -259,7 +229,8 @@ void menu_trueque(struct Sociedad *sociedad) {
         return;
     }
 
-    printf("\n" AZUL "Destino: %s\n" RESET, destino->nombre);
+    printf("\n" AZUL "Comuna que recibe: %s\n" RESET, destino->nombre);
+
     elementoDestino = seleccionar_existencia(
         listaDestino, "Seleccione lo que entrega la otra comuna:");
 
@@ -267,144 +238,164 @@ void menu_trueque(struct Sociedad *sociedad) {
         return;
     }
 
-    printf("\nCantidad que intercambiara cada comuna: ");
+    // vuelve a pedir la cantidad si no es valida
+    do {
+        printf("\nCantidad que intercambiara cada comuna: ");
 
-    if (scanf("%d", &cantidad) != 1) {
-        limpiar_entrada();
-        mostrar_error("Debe ingresar una cantidad numerica.");
-        return;
-    }
+        if (scanf("%d", &cantidad) != 1) {
+            limpiar_entrada();
+            mostrar_error("Ingrese una cantidad numerica.");
+            cantidad = 0;
+        } else {
+            limpiar_entrada();
 
-    if (cantidad <= 0) {
-        mostrar_error("La cantidad debe ser mayor que cero.");
-        return;
-    }
+            if (cantidad <= 0) {
+                mostrar_error("La cantidad debe ser mayor que cero.");
+            }
+        }
+
+    } while (cantidad <= 0);
 
     // realiza el intercambio seleccionado
     if (tipo == 1) {
-        if (realizar_trueque(origen, destino,
-                             elementoOrigen->nombre,
-                             elementoDestino->nombre,
-                             cantidad)) {
-            mostrar_exito("El intercambio de bienes se completo.");
-        }
+        resultado = realizar_trueque(
+            origen, destino,
+            elementoOrigen->nombre,
+            elementoDestino->nombre,
+            cantidad);
     } else {
-        if (realizar_trueque_servicios(origen, destino,
-                                       elementoOrigen->nombre,
-                                       elementoDestino->nombre,
-                                       cantidad)) {
-            mostrar_exito("El intercambio de servicios se completo.");
-        }
+        resultado = realizar_trueque_servicios(
+            origen, destino,
+            elementoOrigen->nombre,
+            elementoDestino->nombre,
+            cantidad);
+    }
+
+    if (resultado) {
+        mostrar_exito("El intercambio se completo correctamente.");
+    } else {
+        mostrar_error("No se pudo realizar el intercambio. Revise las existencias.");
     }
 }
 
-// muestra un resumen de la sociedad al finalizar la simulacion
+// muestra el resumen de la simulacion
 void mostrar_resumen(struct Sociedad *sociedad) {
     struct Comuna *comuna = sociedad->comunas;
-    float sumaSatisfaccion = 0;
-    float promedioSatisfaccion = 0;
-    float sumaNecesidad = 0;
+    float totalNecesidad = 0;
+    float totalSatisfaccion = 0;
     int cantidadComunas = 0;
+    int poblacion = 0;
 
-    // suma los indices de todas las comunas
+    mostrar_titulo("RESUMEN FINAL DE LA SIMULACION");
+
     while (comuna != NULL) {
-        sumaSatisfaccion += comuna->satisfaccion;
-        sumaNecesidad += comuna->necesidad;
+        totalNecesidad += comuna->necesidad;
+        totalSatisfaccion += comuna->satisfaccion;
+        poblacion += comuna->poblacion;
         cantidadComunas++;
+
         comuna = comuna->siguiente;
     }
 
+    printf("Dias simulados: %d\n", sociedad->dia);
+    printf("Poblacion total: %d\n", poblacion);
+    printf("Comunas registradas: %d\n", cantidadComunas);
+
     if (cantidadComunas > 0) {
-        promedioSatisfaccion = sumaSatisfaccion / cantidadComunas;
-        sumaNecesidad /= cantidadComunas;
+        printf("Necesidad promedio: %.2f\n",
+               totalNecesidad / cantidadComunas);
+
+        printf("Satisfaccion promedio: %.2f\n",
+               totalSatisfaccion / cantidadComunas);
     }
 
-    mostrar_titulo("RESUMEN FINAL DE LA SOCIEDAD");
+    printf("\n" NEGRITA "ESTADO DE CADA COMUNA\n" RESET);
 
-    printf("Dias simulados:       %d\n", sociedad->dia);
-    printf("Poblacion total:      %d personas\n", sociedad->poblacionTotal);
-    printf("Comunas activas:      %d\n", cantidadComunas);
-
-    printf("\nPromedio de satisfaccion: ");
-    if (promedioSatisfaccion >= 70) {
-        printf(VERDE "%.2f / 100\n" RESET, promedioSatisfaccion);
-    } else if (promedioSatisfaccion >= 40) {
-        printf(AMARILLO "%.2f / 100\n" RESET, promedioSatisfaccion);
-    } else {
-        printf(ROJO "%.2f / 100\n" RESET, promedioSatisfaccion);
-    }
-
-    printf("Promedio de necesidad:    %.2f / 100\n", sumaNecesidad);
-
-    printf("\n" NEGRITA "Estado final por comuna\n" RESET);
     comuna = sociedad->comunas;
 
     while (comuna != NULL) {
-        printf("  %-20s satisfaccion: %6.2f | necesidad: %6.2f\n",
-               comuna->nombre, comuna->satisfaccion, comuna->necesidad);
+        printf("\n%s\n", comuna->nombre);
+        printf("  Necesidad: %.2f\n", comuna->necesidad);
+        printf("  Satisfaccion: %.2f\n", comuna->satisfaccion);
+
+        if (comuna->satisfaccion >= 70) {
+            printf(VERDE "  Estado: estable\n" RESET);
+        } else if (comuna->satisfaccion >= 40) {
+            printf(AMARILLO "  Estado: necesita mejoras\n" RESET);
+        } else {
+            printf(ROJO "  Estado: necesita ayuda\n" RESET);
+        }
+
         comuna = comuna->siguiente;
     }
 
     printf("\n");
-    if (promedioSatisfaccion >= 70) {
-        printf(VERDE "La sociedad termina con una satisfaccion favorable.\n" RESET);
-    } else if (promedioSatisfaccion >= 40) {
-        printf(AMARILLO "La sociedad termina con resultados intermedios.\n" RESET);
-    } else {
-        printf(ROJO "La sociedad termina con una satisfaccion baja.\n" RESET);
-    }
 }
 
-// inicia la sociedad y ejecuta la simulacion
+// inicia y ejecuta la simulacion
 int main(void) {
-    struct Sociedad sociedad;
+    struct Sociedad sociedad = {0};
     int dia;
 
-    // inicia los numeros aleatorios
-    srand(time(NULL));
+    srand((unsigned int) time(NULL));
 
     mostrar_titulo("SIMULACION DE LA SOCIEDAD SOLARPUNK");
-    printf("Administre los intercambios y observe los cambios\n");
-    printf("en las necesidades y la satisfaccion de las comunas.\n");
 
-    // carga los datos de los archivos
-    if (!inicializar_sociedad(&sociedad,
-                              "Datos/personas",
-                              "Datos/comunas",
-                              "Datos/bienes",
-                              "Datos/servicios")) {
+    printf(AMARILLO NEGRITA);
+    printf("\n     AUTORIDAD SUPREMA, TENGANOS PIEDAD\n\n");
+    printf(RESET);
+
+    printf("Iniciando la sociedad...\n");
+
+    // carga los datos iniciales desde los archivos
+    if (!inicializar_sociedad(
+            &sociedad,
+            "Datos/personas",
+            "Datos/comunas",
+            "Datos/bienes",
+            "Datos/servicios")) {
+
         mostrar_error("No se pudo inicializar la sociedad.");
         return 1;
     }
 
     calcular_indices_sociedad(&sociedad);
 
-    mostrar_titulo("ESTADO INICIAL");
+    mostrar_exito("La sociedad se inicializo correctamente.");
+
     mostrar_comunas(&sociedad);
 
-    // ejecuta la simulacion durante quince dias
+    // ejecuta los dias de la simulacion
     for (dia = 1; dia <= 15; dia++) {
-        char tituloDia[40];
+        sociedad.dia = dia;
 
-        snprintf(tituloDia, sizeof(tituloDia), "DIA %d DE 15", dia);
-        mostrar_titulo(tituloDia);
+        mostrar_titulo("NUEVO DIA DE SIMULACION");
 
-        menu_trueque(&sociedad);
+        printf(NEGRITA "DIA %d DE 15\n" RESET, dia);
+
+        // genera una emergencia cuando llega el momento
+        if (sociedad.diasParaEmergencia <= 0) {
+            generar_emergencia(&sociedad);
+        }
+
+        if (dia < 15) {
+            menu_trueque(&sociedad);
+        }
+
+        // aplica el consumo y actualiza los indices
         aplicar_consumo_diario(&sociedad);
         calcular_indices_sociedad(&sociedad);
 
-        printf("\n");
-        mostrar_exito("El consumo diario se ha aplicado.");
+        printf("\n" CIAN "Estado al finalizar el dia %d:\n" RESET, dia);
         mostrar_comunas(&sociedad);
     }
 
-    // presenta los resultados finales
+    // presenta los resultados de los dias simulados
     mostrar_resumen(&sociedad);
 
-    // libera toda la memoria antes de terminar
-    liberar_sociedad(&sociedad);
+    mostrar_exito("La simulacion ha terminado.");
 
-    mostrar_exito("La simulacion ha terminado correctamente.");
+    liberar_sociedad(&sociedad);
 
     return 0;
 }

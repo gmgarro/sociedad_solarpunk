@@ -4,35 +4,50 @@
 #include "emergencias.h"
 #include "sociedad.h"
 
+// colores para mostrar los mensajes
+#define ROJO "\033[31m"
+#define AMARILLO "\033[33m"
+#define CIAN "\033[36m"
+#define VERDE "\033[32m"
+#define NEGRITA "\033[1m"
+#define RESET "\033[0m"
+
 // quita el 25 % de la cantidad de cada bien o servicio de una lista
 static void perder_cuarto(struct Existencia *lista) {
     struct Existencia *actual = lista;
+    int reduccion;
+    int huboPerdidas = 0;
 
     while (actual != NULL) {
-        int reduccion = actual->cantidad / 4;
+        reduccion = actual->cantidad / 4;
 
         // solo muestra lo que de verdad se perdio
         if (reduccion > 0) {
             actual->cantidad -= reduccion;
 
-            printf("%s: se perdieron %d unidades\n",
+            printf("  - %-30s " ROJO "-%d unidades\n" RESET,
                    actual->nombre, reduccion);
+
+            huboPerdidas = 1;
         }
 
         actual = actual->siguiente;
+    }
+
+    if (!huboPerdidas) {
+        printf("  " VERDE "No hubo perdidas en esta categoria.\n" RESET);
     }
 }
 
 // genera una emergencia en una comuna aleatoria
 void generar_emergencia(struct Sociedad *sociedad) {
-    struct Comuna *comuna = sociedad->comunas;
+    struct Comuna *comuna;
     struct Comuna *afectada;
     int cantidadComunas = 0;
     int posicion;
     int i;
 
-    if(sociedad == NULL)
-    {
+    if (sociedad == NULL) {
         return;
     }
 
@@ -57,13 +72,29 @@ void generar_emergencia(struct Sociedad *sociedad) {
         afectada = afectada->siguiente;
     }
 
-    printf("\n¡emergencia en la comuna %s!\n", afectada->nombre);
+    // muestra el aviso principal de la emergencia
+    printf("\n");
+    printf(AMARILLO NEGRITA);
+    printf("==================================================\n");
+    printf("                 ALERTA DEL SISTEMA\n");
+    printf("==================================================\n");
+    printf(RESET);
 
-    // la comuna afectada pierde el 25 % de sus bienes y servicios
-    printf("bienes:\n");
+    printf(ROJO NEGRITA);
+    printf("\n  ¡EMERGENCIA EN LA COMUNA %s!\n", afectada->nombre);
+    printf(RESET);
+
+    printf("\nSe ha registrado una emergencia que afecta a esta comuna.\n");
+    printf("Se aplicaran perdidas en sus bienes y servicios.\n");
+
+    // muestra las perdidas de bienes
+    printf("\n" CIAN NEGRITA "  PERDIDAS DE BIENES\n" RESET);
+    printf("  ------------------------------------------------\n");
     perder_cuarto(afectada->bienes);
 
-    printf("servicios:\n");
+    // muestra las perdidas de servicios
+    printf("\n" CIAN NEGRITA "  PERDIDAS DE SERVICIOS\n" RESET);
+    printf("  ------------------------------------------------\n");
     perder_cuarto(afectada->servicios);
 
     // la satisfaccion de la comuna afectada baja directo
@@ -74,6 +105,11 @@ void generar_emergencia(struct Sociedad *sociedad) {
 
     // reduce la satisfaccion de las comunas cercanas
     afectar_comunas_cercanas(afectada);
+
+    printf("\n" AMARILLO NEGRITA);
+    printf("  La emergencia tambien puede afectar a las comunas cercanas.\n");
+    printf("==================================================\n");
+    printf(RESET);
 }
 
 // baja la satisfaccion de una comuna cercana (si existe)
@@ -87,12 +123,16 @@ static void penalizar_cercana(struct Comuna *cercana) {
     // actualiza la necesidad y satisfaccion
     calcular_indices_comuna(cercana);
 
-    printf("la comuna %s tambien fue afectada por la emergencia\n",
+    printf(AMARILLO "  [!] La comuna %s tambien fue afectada.\n" RESET,
            cercana->nombre);
 }
 
 // las cercanas son la anterior, la siguiente y la siguiente de la siguiente
 void afectar_comunas_cercanas(struct Comuna *afectada) {
+    if (afectada == NULL) {
+        return;
+    }
+
     penalizar_cercana(afectada->anterior);
     penalizar_cercana(afectada->siguiente);
 
