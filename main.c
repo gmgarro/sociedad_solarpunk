@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -22,8 +21,8 @@ void mostrar_comunas(struct Sociedad *sociedad) {
         actual = comuna->bienes;
 
         while (actual != NULL) {
-        printf("- %s: cantidad = %d, valor = %.2f\n",
-           actual->nombre, actual->cantidad, actual->valor);
+            printf("- %s: cantidad = %d, valor = %.2f\n",
+                   actual->nombre, actual->cantidad, actual->valor);
             actual = actual->siguiente;
         }
 
@@ -32,8 +31,8 @@ void mostrar_comunas(struct Sociedad *sociedad) {
         actual = comuna->servicios;
 
         while (actual != NULL) {
-        printf("- %s: cantidad = %d, valor = %.2f\n",
-           actual->nombre, actual->cantidad, actual->valor);
+            printf("- %s: cantidad = %d, valor = %.2f\n",
+                   actual->nombre, actual->cantidad, actual->valor);
             actual = actual->siguiente;
         }
 
@@ -46,15 +45,56 @@ void mostrar_comunas(struct Sociedad *sociedad) {
     printf("\n----------------------------------\n");
 }
 
+// permite seleccionar un bien o servicio por numero
+struct Existencia *seleccionar_existencia(
+    struct Existencia *lista, const char *mensaje) {
+
+    struct Existencia *actual = lista;
+    struct Existencia *seleccionado;
+    int opcion;
+    int i = 1;
+
+    if (lista == NULL) {
+        printf("No hay elementos disponibles.\n");
+        return NULL;
+    }
+
+    printf("\n%s\n", mensaje);
+
+    while (actual != NULL) {
+        printf("%d. %s (cantidad: %d)\n",
+               i, actual->nombre, actual->cantidad);
+        actual = actual->siguiente;
+        i++;
+    }
+
+    printf("Opcion: ");
+
+    if (scanf("%d", &opcion) != 1 || opcion < 1 || opcion >= i) {
+        printf("Opcion no valida.\n");
+        return NULL;
+    }
+
+    seleccionado = lista;
+
+    for (i = 1; i < opcion; i++) {
+        seleccionado = seleccionado->siguiente;
+    }
+
+    return seleccionado;
+}
+
 void menu_trueque(struct Sociedad *sociedad) {
     struct Comuna *origen;
     struct Comuna *destino;
+    struct Existencia *elementoOrigen;
+    struct Existencia *elementoDestino;
+    struct Existencia *listaOrigen;
+    struct Existencia *listaDestino;
     int tipo;
     int numero;
     int i;
     int cantidad;
-    char nombreOrigen[100];
-    char nombreDestino[100];
 
     printf("\n¿Desea realizar un trueque?\n");
     printf("1. Bienes\n2. Servicios\n0. Omitir\nOpcion: ");
@@ -78,12 +118,14 @@ void menu_trueque(struct Sociedad *sociedad) {
     }
 
     printf("Numero de la comuna que entrega: ");
+
     if (scanf("%d", &numero) != 1 || numero < 1) {
         printf("Comuna no valida.\n");
         return;
     }
 
     origen = sociedad->comunas;
+
     for (i = 1; origen != NULL && i < numero; i++) {
         origen = origen->siguiente;
     }
@@ -94,12 +136,14 @@ void menu_trueque(struct Sociedad *sociedad) {
     }
 
     printf("Numero de la comuna que recibe: ");
+
     if (scanf("%d", &numero) != 1 || numero < 1) {
         printf("Comuna no valida.\n");
         return;
     }
 
     destino = sociedad->comunas;
+
     for (i = 1; destino != NULL && i < numero; i++) {
         destino = destino->siguiente;
     }
@@ -109,13 +153,33 @@ void menu_trueque(struct Sociedad *sociedad) {
         return;
     }
 
-    printf("Nombre del elemento que entrega: ");
-    scanf(" %99[^\n]", nombreOrigen);
+    // selecciona las listas segun el tipo de trueque
+    if (tipo == 1) {
+        listaOrigen = origen->bienes;
+        listaDestino = destino->bienes;
+    } else {
+        listaOrigen = origen->servicios;
+        listaDestino = destino->servicios;
+    }
 
-    printf("Nombre del elemento que recibe: ");
-    scanf(" %99[^\n]", nombreDestino);
+    // selecciona el elemento que entrega la comuna de origen
+    elementoOrigen = seleccionar_existencia(
+        listaOrigen, "Seleccione el elemento que entrega:");
+
+    if (elementoOrigen == NULL) {
+        return;
+    }
+
+    // selecciona el elemento que entrega la comuna de destino
+    elementoDestino = seleccionar_existencia(
+        listaDestino, "Seleccione el elemento que recibe:");
+
+    if (elementoDestino == NULL) {
+        return;
+    }
 
     printf("Cantidad a intercambiar: ");
+
     if (scanf("%d", &cantidad) != 1 || cantidad <= 0) {
         printf("Cantidad no valida.\n");
         return;
@@ -123,10 +187,13 @@ void menu_trueque(struct Sociedad *sociedad) {
 
     if (tipo == 1) {
         realizar_trueque(origen, destino,
-                         nombreOrigen, nombreDestino, cantidad);
+                         elementoOrigen->nombre,
+                         elementoDestino->nombre,
+                         cantidad);
     } else {
         realizar_trueque_servicios(origen, destino,
-                                   nombreOrigen, nombreDestino,
+                                   elementoOrigen->nombre,
+                                   elementoDestino->nombre,
                                    cantidad);
     }
 }
@@ -159,10 +226,13 @@ int main(void) {
 
     // ejecuta la simulacion durante diez dias
     for (dia = 1; dia <= 10; dia++) {
-    printf("\n\n========== dia %d ==========\n", dia);
+        printf("\n\n========== dia %d ==========\n", dia);
 
-    menu_trueque(&sociedad);
-    aplicar_consumo_diario(&sociedad);
-    calcular_indices_sociedad(&sociedad);
-    mostrar_comunas(&sociedad);
-}}
+        menu_trueque(&sociedad);
+        aplicar_consumo_diario(&sociedad);
+        calcular_indices_sociedad(&sociedad);
+        mostrar_comunas(&sociedad);
+    }
+
+    return 0;
+}
