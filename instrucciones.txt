@@ -20,4 +20,4 @@ Después de compilar, ejecutar:
 ./programa
 
 IMPORTANTE
-Mantener los archivos de datos y las carpetas necesarias en sus rutas originales para que el programa funcione correctamente.
+- Mantener los archivos de datos y las carpetas necesarias en sus rutas originales para que el programa funcione correctamente.
