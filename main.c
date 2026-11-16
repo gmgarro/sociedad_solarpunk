@@ -536,7 +536,7 @@ void menu_personas(struct Sociedad *sociedad) {
 
         printf("1. Ver las personas de una comuna\n");
         printf("2. Regalar un bien\n");
-        printf("3. Leer un libro (prueba)\n");
+        printf("3. Leer un libro \n");
         printf("0. Continuar\n\n");
 
         opcion = pedir_opcion("Opcion: ", 0, 3);
