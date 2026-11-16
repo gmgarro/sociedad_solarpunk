@@ -6,6 +6,7 @@ Proyecto desarrollado por estudiantes de primer año de la **Escuela de Ingenier
 
 - **Gabriel Montero Garro**
 - **Esteban Solano Orozco**
+- **Stephano Jarquin Quesada**
 
 **Profesor:** Aurelio Sanabria Rodríguez
 
